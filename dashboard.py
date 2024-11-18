@@ -19,6 +19,16 @@ class Dashboard:
     self.shootouts_df = pd.read_csv('shootouts.csv')
     
     self.COUNTRIES = self.get_countries()
+
+  def get_countries(self) -> pd.Series[str]:
+    return ['Todos'] + sorted(pd.concat([
+      self.results_df['home_team'],
+      self.results_df['away_team'],
+      self.goalscorers_df['home_team'],
+      self.goalscorers_df['away_team'],
+      self.shootouts_df['home_team'],
+      self.shootouts_df['away_team'],
+    ]).unique().tolist())
   
   def show_filters(self) -> None:
     self.country = st.sidebar.selectbox('País', self.COUNTRIES)
@@ -31,23 +41,26 @@ class Dashboard:
     self.shootouts_df = self.shootouts_df[(self.shootouts_df['date'] >= self.initial_date.strftime('%Y-%m-%d')) & (self.shootouts_df['date'] <= self.final_date.strftime('%Y-%m-%d'))]
 
   def show_dashboard(self) -> None:
-    # main_host = (results_df[results_df['country'] == country] if country != 'Todos' else results_df)['country'].value_counts()
+    self.chart_main_host()
+  
     top_scorer = self.goalscorers_df['scorer'].value_counts()
     own_goals = self.goalscorers_df['own_goal'].value_counts()
 
-    # st.bar_chart(main_host) # Países que mais sediam partidas
     st.bar_chart(top_scorer) # Maiores artilheiros
     st.bar_chart(own_goals) # Artilheiros de gol-contra
   
-  def get_countries(self) -> pd.Series[str]:
-    return ['Todos'] + sorted(pd.concat([
-      self.results_df['home_team'],
-      self.results_df['away_team'],
-      self.goalscorers_df['home_team'],
-      self.goalscorers_df['away_team'],
-      self.shootouts_df['home_team'],
-      self.shootouts_df['away_team'],
-    ]).unique().tolist())
+
+  
+  def chart_main_host(self) -> None:
+    data = self.results_df[self.results_df['country'] == self.country] if self.country != 'Todos' else self.results_df
+    data = data['country'].value_counts()
     
+    if data.empty:
+      st.write('Esse país nunca sediou uma partida!')
+      return
+    
+    st.bar_chart(data)
+  
+  
   
   
