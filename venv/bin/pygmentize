@@ -1,4 +1,4 @@
-#!/home/gustavo/dev/orgdados/venv/bin/python
+#!/home/gustvo/Documentos/GitHub/orgdados/venv/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys
