@@ -11,6 +11,8 @@ shootouts_df : pd.DataFrame = pd.read_csv('shootouts.csv')
 
 TOURNAMENTS : list[str] = sorted(results_df['tournament'].unique().tolist())
 
+PLAYERS : list[str] = sorted(goalscorers_df['scorer'].dropna().unique().tolist())
+
 COUNTRIES : list[str] = sorted(pd.concat([
     results_df['home_team'],
     results_df['away_team'],
@@ -30,7 +32,8 @@ results_df = results_df[(results_df['date'] >= initial_date.strftime('%Y-%m-%d')
 goalscorers_df = goalscorers_df[(goalscorers_df['date'] >= initial_date.strftime('%Y-%m-%d')) & (goalscorers_df['date'] <= final_date.strftime('%Y-%m-%d'))]
 shootouts_df = shootouts_df[(shootouts_df['date'] >= initial_date.strftime('%Y-%m-%d')) & (shootouts_df['date'] <= final_date.strftime('%Y-%m-%d'))]
   
-data : pd.DataFrame
+data : pd.DataFrame # Extração reduzida de dados a cada análise
+# chart : pd.Series[int] # Dados prontos para serem exibidos a cada análise
 
 ################################
 
@@ -72,8 +75,8 @@ if not skip_home_visitor_analysis:
 
   home = data['home_team'] == country_2
   visitor = data['away_team'] == country_2
-  home_won = data['home_score'] > data['away_score']
   draw = data['home_score'] == data['away_score']
+  home_won = data['home_score'] > data['away_score']
   visitor_won = data['home_score'] < data['away_score']
 
   wins_home = len(data[(home) & (home_won)])
@@ -136,3 +139,66 @@ else:
   st.bar_chart(chart)
 
 
+# 4. Avaliação do Jogador
+
+st.subheader('Avaliação do Jogador')
+
+player = st.selectbox('Jogador', ['Nenhum'] + PLAYERS)
+
+if player == 'Nenhum':
+  st.write('Selecione um jogador!')
+else:
+  data = goalscorers_df[goalscorers_df['scorer'] == player]
+  chart = data['date'].value_counts()
+
+
+  if len(chart) < 2:
+    st.write(f'{player} não tem dados suficientes para análise.')
+  else:
+    st.write(f'{player} tem um total de {len(data)} gols em sua carreira')
+    st.area_chart(chart)
+
+
+# 5. Decisões por pênalti
+
+st.subheader('Decisões por Pênalti')
+
+size_5 = st.number_input('Quantidade', 1, 5, 2)
+_countries = st.multiselect('Países', COUNTRIES)
+
+if len(_countries) != size_5:
+  st.write(f'Selecione exatamente {size_5} países!')
+else:
+  data = shootouts_df[
+    (shootouts_df['home_team'].isin(_countries)) |
+    (shootouts_df['away_team'].isin(_countries))
+  ]
+
+  for _country in _countries:
+    home = data['home_team'] == _country
+    visitor = data['away_team'] == _country
+    winner = data['winner'] == _country
+
+    wins_home = len(data[(home) & (winner)])
+    lose_home = len(data[(home) & -(winner)])
+    
+    wins_visitor = len(data[(visitor) & (winner)])
+    lose_visitor = len(data[(visitor) & -(winner)])
+
+    matches = wins_home + lose_home + wins_visitor + lose_visitor
+
+    if matches != 0:
+      st.write(f'{_country} jogou decisões por pênalti {matches} vezes.')
+      st.write(f'Vitórias: {wins_home + wins_visitor}')
+      st.write(f'Derrotas: {lose_home + lose_visitor}')
+
+    if wins_home == 0 or wins_visitor == 0 or lose_home == 0 or lose_visitor == 0:
+      st.write(f'{_country} não possui dados o suficiente para gerar um gráfico.')
+      continue
+    
+    fig, ax = plt.subplots()
+    ax.pie([wins_home, lose_home, wins_visitor, lose_visitor], 
+        labels=['Vitórias em Casa', 'Derrotas em Casa', 'Vitórias como Visitante', 'Derrotas como Visitante']
+    )
+    ax.axis('equal')
+    st.pyplot(fig)
