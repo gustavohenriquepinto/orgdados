@@ -33,7 +33,6 @@ goalscorers_df = goalscorers_df[(goalscorers_df['date'] >= initial_date.strftime
 shootouts_df = shootouts_df[(shootouts_df['date'] >= initial_date.strftime('%Y-%m-%d')) & (shootouts_df['date'] <= final_date.strftime('%Y-%m-%d'))]
   
 data : pd.DataFrame # Extração reduzida de dados a cada análise
-# chart : pd.Series[int] # Dados prontos para serem exibidos a cada análise
 
 ################################
 
@@ -202,3 +201,11 @@ else:
     )
     ax.axis('equal')
     st.pyplot(fig)
+
+with open('archive.zip', "rb") as f:
+    st.download_button(
+        label="Baixar Datasets",
+        data=f,
+        file_name='datasets.zip',
+        mime="application/zip"
+    )
